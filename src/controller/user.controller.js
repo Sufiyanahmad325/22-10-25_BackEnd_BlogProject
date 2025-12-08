@@ -257,6 +257,8 @@ export const logout = asyncHandler(async (req, res, next) => {
 export const changePassword = asyncHandler(async (req, res, next) => {
     const { oldPassword, newPassword } = req.body
 
+    console.log('hello ===========> ' , oldPassword , ' ', newPassword)
+
     if (oldPassword === newPassword) {
         throw new ApiError("new password cannot be same as old password", 400);
     }
@@ -266,7 +268,7 @@ export const changePassword = asyncHandler(async (req, res, next) => {
         throw new ApiError("all fields are required", 400)
     }
 
-    const user = req.user
+    const user = await User.findById(req.user._id)
 
     const isPasswordMatched = await user.isCorrectPassword(oldPassword)
     if (!isPasswordMatched) {
