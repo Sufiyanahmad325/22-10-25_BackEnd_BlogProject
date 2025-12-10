@@ -447,6 +447,38 @@ export const addBookmark = asyncHandler(async (req ,res)=>{
 
 
 
+export const  deleteUserAccount = asyncHandler((async(req , res , next )=>{
+    const {password} = req.body
+
+    if(!password.trim()){
+        throw new ApiError("password is required" , 400)
+    }
+
+    const  user =  await User.findById(req.user._id)
+
+    const isPasswordMatched = await user.isCorrectPassword(password)
+    
+    
+    if(!isPasswordMatched){
+        throw new ApiError("incorrect password" , 401)
+    }
+
+
+    const response = await User.findByIdAndDelete(req.user._id)
+
+    if(!response){
+        throw new ApiError("failed to delete user account" , 500)
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, null, "user account deleted successfully")
+    );
+
+   
+
+}))
+
+
 
 
 
