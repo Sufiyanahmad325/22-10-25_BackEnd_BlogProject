@@ -1,7 +1,7 @@
 
 import express from 'express';
 import { upload } from '../middleware/multer.middleware.js';
-import {  deleteBlog, editBlog, getAllBlogsWithCurentUser, getAllUsers, LikeBlog, login, logout, register, updateUserProfile, uploadBlog } from '../controller/user.controller.js';
+import { addBookmark, changePassword, deleteBlog, deleteUserAccount, editBlog, getAllBlogsWithCurentUser, getAllUsers, LikeBlog, login, logout, register, updateUserProfile, uploadBlog } from '../controller/user.controller.js';
 import { verifyJWT } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -27,7 +27,9 @@ router.route('/get-all-users').get(verifyJWT, getAllUsers)
 
 
 router.route('/update-user-profile').post(upload.fields([{ name: 'avatar', maxCount: 1 }]), verifyJWT, updateUserProfile)
-
+router.route("/bookmark-blog").post(verifyJWT , addBookmark)
+router.route("/change-password").post(verifyJWT , changePassword)
+router.route("/delete-account").post(verifyJWT , deleteUserAccount)
 
 
 
