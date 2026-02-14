@@ -464,11 +464,20 @@ export const  deleteUserAccount = asyncHandler((async(req , res , next )=>{
     }
 
 
+
     const response = await User.findByIdAndDelete(req.user._id)
 
     if(!response){
         throw new ApiError("failed to delete user account" , 500)
     }
+
+    const userBlogsDelete = await Post.deleteMany({author : req.user._id})
+
+    if(!userBlogsDelete){
+        throw new ApiError("failed to delete user blogs" , 500)
+    }
+
+   
 
     res.status(200).json(
         new ApiResponse(200, null, "user account deleted successfully")
