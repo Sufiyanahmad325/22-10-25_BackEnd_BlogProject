@@ -73,9 +73,8 @@ export const login = asyncHandler(async (req, res, next) => {
 
     const cookieOptions = {
         httpOnly: true,     // ⛔ JS can't access this cookie
-        secure: false, // ✅ only HTTPS in prod
-        sameSite: "lax",    // ✅ prevents CSRF issues but allows normal navigation
-        path: "/",           // ✅ accessible from entire site
+        secure: true,      // ⛔ only sent over HTTPS
+        sameSite: "strict",    // ✅ prevents CSRF issues but allows normal navigation
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     };
 
@@ -147,14 +146,14 @@ export const getAllBlogsWithCurentUser = asyncHandler(async (req, res) => {
     const user = req.user
 
 
-    const allUserBlog = await Post.find()
+    const allUserBlog = await Post.find().sort({ createdAt: -1 }).populate({ path: "author", select: "fullName avatar username" })
 
     if (!allUserBlog) {
         throw new ApiError("no user found", 404)
     }
 
     return res.status(200).json(
-        new ApiResponse(200, { user: user, allUserBlog: allUserBlog }, "user found successfully")
+        new ApiResponse(200, { user:user ,  allUserBlog: allUserBlog }, "user found successfully")
     )
 
 })
@@ -162,7 +161,7 @@ export const getAllBlogsWithCurentUser = asyncHandler(async (req, res) => {
 
 
 export const editBlog = asyncHandler(async (req, res) => {
-    const { title, content , category , blogId } = req.body
+    const { title, content, category, blogId } = req.body
     const user = req.user
 
     if (!title || !content || !blogId || !category) {
@@ -186,15 +185,15 @@ export const editBlog = asyncHandler(async (req, res) => {
         }
     }
 
-      
+
 
     const editedBlog = await Post.findByIdAndUpdate(
         { _id: blogId, author: user._id }, // if both match then blog will be updated
         {
-            title : title || findBlog.title,
-            content:content || findBlog.content,
+            title: title || findBlog.title,
+            content: content || findBlog.content,
             blogImage: uploadAvatarlink || findBlog.blogImage,
-            category : category || findBlog.category
+            category: category || findBlog.category
         }, { new: true }
     )
 
@@ -244,7 +243,8 @@ export const deleteBlog = asyncHandler(async (req, res, next) => {
 export const logout = asyncHandler(async (req, res, next) => {
     const options = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: "strict",
     }
     res.clearCookie("accessToken", options)
     res.status(200).json(
@@ -257,7 +257,7 @@ export const logout = asyncHandler(async (req, res, next) => {
 export const changePassword = asyncHandler(async (req, res, next) => {
     const { oldPassword, newPassword } = req.body
 
-    console.log('hello ===========> ' , oldPassword , ' ', newPassword)
+    console.log('hello ===========> ', oldPassword, ' ', newPassword)
 
     if (oldPassword === newPassword) {
         throw new ApiError("new password cannot be same as old password", 400);
@@ -277,7 +277,7 @@ export const changePassword = asyncHandler(async (req, res, next) => {
 
 
     user.password = newPassword
-    await user.save({validateBeforeSave: false})
+    await user.save({ validateBeforeSave: false })
 
     res.status(200).json(
         new ApiResponse(200, null, "password changed successfully")
@@ -295,13 +295,13 @@ export const LikeBlog = asyncHandler(async (req, res, next) => {
         throw new ApiError("blog id is required", 400);
     }
 
-    const blog = await Post.findById({_id:blogId}); //mujhe aayse dena hai _blogId but front
+    const blog = await Post.findById({ _id: blogId }); //mujhe aayse dena hai _blogId but front
     if (!blog) {
         throw new ApiError("blog not found", 404);
     }
 
 
-    const isAvailable = blog.likes.filter((blog)=> blog._id.toString() === user._id.toString()).length > 0
+    const isAvailable = blog.likes.filter((blog) => blog._id.toString() === user._id.toString()).length > 0
 
 
     // check if user already liked the blog
@@ -412,78 +412,78 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
 
 
 
-export const addBookmark = asyncHandler(async (req ,res)=>{
-    const {blogId} = req.body
+export const addBookmark = asyncHandler(async (req, res) => {
+    const { blogId } = req.body
 
-    const {_id} = req.user
+    const { _id } = req.user
 
-    if(!blogId){
-        throw new ApiError("blog id is required" , 400)
+    if (!blogId) {
+        throw new ApiError("blog id is required", 400)
     }
 
     const user = await User.findById(_id)
 
 
-    const isBoomarked  = user.bookmarkedPost?.includes(blogId)
+    const isBoomarked = user.bookmarkedPost?.includes(blogId)
 
 
-    if(isBoomarked){
+    if (isBoomarked) {
         user.bookmarkedPost.pull(blogId)
-    }   else{   
+    } else {
         user.bookmarkedPost.push(blogId)
-    }   
+    }
 
-    await user.save({validateBeforeSave:false})
+    await user.save({ validateBeforeSave: false })
 
     const userUpdated = await User.findById(_id).select("-password")
 
     res.status(200).json(
-        new ApiResponse(200 , userUpdated , "bookmark updated successfully")
+        new ApiResponse(200, userUpdated, "bookmark updated successfully")
     )
 
-    
+
 
 })
 
 
 
-export const  deleteUserAccount = asyncHandler((async(req , res , next )=>{
-    const {password} = req.body
+export const deleteUserAccount = asyncHandler((async (req, res, next) => {
+    const { password } = req.body
 
-    if(!password.trim()){
-        throw new ApiError("password is required" , 400)
+    if (!password.trim()) {
+        throw new ApiError("password is required", 400)
     }
 
-    const  user =  await User.findById(req.user._id)
+    const user = await User.findById(req.user._id)
 
     const isPasswordMatched = await user.isCorrectPassword(password)
-    
-    
-    if(!isPasswordMatched){
-        throw new ApiError("incorrect password" , 401)
+
+
+    if (!isPasswordMatched) {
+        throw new ApiError("incorrect password", 401)
     }
 
 
 
     const response = await User.findByIdAndDelete(req.user._id)
 
-    if(!response){
-        throw new ApiError("failed to delete user account" , 500)
+    if (!response) {
+        throw new ApiError("failed to delete user account", 500)
     }
 
-    const userBlogsDelete = await Post.deleteMany({author : req.user._id})
+    const userBlogsDelete = await Post.deleteMany({ author: req.user._id })
 
-    if(!userBlogsDelete){
-        throw new ApiError("failed to delete user blogs" , 500)
+    if (!userBlogsDelete) {
+        throw new ApiError("failed to delete user blogs", 500)
     }
 
-   
+
 
     res.status(200).json(
         new ApiResponse(200, null, "user account deleted successfully")
     );
 
-   
+
 
 }))
 
