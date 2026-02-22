@@ -490,6 +490,24 @@ export const deleteUserAccount = asyncHandler((async (req, res, next) => {
 
 
 
+export const isUserLoggedIn = asyncHandler(async (req, res, next) => {
+
+    const user = req.user
+
+    if (!user) {
+        throw new ApiError("no user found", 404)
+    }
+
+    const userDetails = await User.findById(user._id).select("-password")
+
+    res.status(200).json(
+        new ApiResponse(200, userDetails, "user is logged in")
+    )
+
+})
+
+
+
 
 
 
