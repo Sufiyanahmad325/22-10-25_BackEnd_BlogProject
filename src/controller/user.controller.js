@@ -219,7 +219,7 @@ export const deleteBlog = asyncHandler(async (req, res, next) => {
         throw new ApiError("blog id is required", 400)
     }
 
-    const deleteMyblog = await Post.findByIdAndDelete({ _id: blogId, author: user._id })
+    const deleteMyblog = await Post.find().sort({ createdAt: -1 }).populate({ path: "author", select: "fullName avatar username" })
 
     if (!deleteMyblog) {
         throw new ApiError("you do not have permission to delete this blog or blog not found", 403)
