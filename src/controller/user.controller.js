@@ -108,9 +108,10 @@ export const uploadBlog = asyncHandler(async (req, res, next) => {
             const uploadedImage = await uploadCloudinary(imageLocalPath);
             if (uploadedImage?.url) {
                 blogImageUrl = uploadedImage.url;
+                console.log("Uploaded image public_id:", uploadedImage.public_id);
             }
         }
-        
+
 
         const post = await Post.create({
             title,
@@ -121,6 +122,7 @@ export const uploadBlog = asyncHandler(async (req, res, next) => {
             tags: tags ? (Array.isArray(tags) ? tags : [tags]) : [],
             author: req.user._id,
             blogImage: blogImageUrl,
+            blogImagePublicId: blogImageUrl ? uploadedImage.public_id : null
         })
 
         if (!post) {
@@ -224,6 +226,8 @@ export const deleteBlog = asyncHandler(async (req, res, next) => {
     }
 
     const deleteMyblog = await Post.findOneAndDelete({ _id: blogId, author: user._id })
+
+    
 
     if (!deleteMyblog) {
         throw new ApiError("you do not have permission to delete this blog or blog not found", 403)
