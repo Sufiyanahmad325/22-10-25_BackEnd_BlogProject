@@ -110,6 +110,7 @@ export const uploadBlog = asyncHandler(async (req, res, next) => {
                 blogImageUrl = uploadedImage.url;
             }
         }
+        
 
         const post = await Post.create({
             title,
@@ -120,15 +121,18 @@ export const uploadBlog = asyncHandler(async (req, res, next) => {
             tags: tags ? (Array.isArray(tags) ? tags : [tags]) : [],
             author: req.user._id,
             blogImage: blogImageUrl,
-        });
+        })
 
         if (!post) {
             throw new ApiError(500, "Failed to create blog post");
         }
 
+        const createdPost = await Post.findById(post._id).populate({ path: "author", select: "fullName avatar username" })
+
+
         return res
             .status(201)
-            .json(new ApiResponse(201, post, "Blog post uploaded successfully"));
+            .json(new ApiResponse(201, createdPost, "Blog post uploaded successfully"));
     } catch (error) {
         console.error("Error uploading blog:", error);
         next(error);
@@ -153,7 +157,7 @@ export const getAllBlogsWithCurentUser = asyncHandler(async (req, res) => {
     }
 
     return res.status(200).json(
-        new ApiResponse(200, { user:user ,  allUserBlog: allUserBlog }, "user found successfully")
+        new ApiResponse(200, { user: user, allUserBlog: allUserBlog }, "user found successfully")
     )
 
 })
@@ -219,13 +223,13 @@ export const deleteBlog = asyncHandler(async (req, res, next) => {
         throw new ApiError("blog id is required", 400)
     }
 
-    const deleteMyblog = await Post.find().sort({ createdAt: -1 }).populate({ path: "author", select: "fullName avatar username" })
+    const deleteMyblog = await Post.findOneAndDelete({ _id: blogId, author: user._id })
 
     if (!deleteMyblog) {
         throw new ApiError("you do not have permission to delete this blog or blog not found", 403)
     }
 
-    const usersBlog = await Post.find({ author: user._id })
+    const usersBlog = await Post.find({ author: user._id }).populate({ path: "author", select: "fullName avatar username" }).sort({ createdAt: -1 })
     if (!usersBlog) {
         throw new ApiError("no user found", 404)
     }
