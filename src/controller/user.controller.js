@@ -4,6 +4,7 @@ import ApiError from "../utils/apiError.js"
 import ApiResponse from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import uploadCloudinary from "../utils/cloudinory.js"
+import { deleteImageOnCloudinary } from "../utils/deleteImageOnCloudinory.js"
 
 
 export const register = asyncHandler(async (req, res, next) => {
@@ -102,13 +103,12 @@ export const uploadBlog = asyncHandler(async (req, res, next) => {
         }
 
         const imageLocalPath = req.files?.blogImage?.[0]?.path;
-        let blogImageUrl = null;
+        let blogImage = null;
 
         if (imageLocalPath) {
             const uploadedImage = await uploadCloudinary(imageLocalPath);
             if (uploadedImage?.url) {
-                blogImageUrl = uploadedImage.url;
-                console.log("Uploaded image public_id:", uploadedImage.public_id);
+                blogImage = uploadedImage;
             }
         }
 
@@ -121,8 +121,8 @@ export const uploadBlog = asyncHandler(async (req, res, next) => {
             writerAvatar: req.user.avatar || null,
             tags: tags ? (Array.isArray(tags) ? tags : [tags]) : [],
             author: req.user._id,
-            blogImage: blogImageUrl,
-            blogImagePublicId: blogImageUrl ? uploadedImage.public_id : null
+            blogImage: blogImage ? blogImage.url : null,
+            blogImagePublicId: blogImage ? blogImage.public_id : null
         })
 
         if (!post) {
@@ -225,15 +225,30 @@ export const deleteBlog = asyncHandler(async (req, res, next) => {
         throw new ApiError("blog id is required", 400)
     }
 
-    const deleteMyblog = await Post.findOneAndDelete({ _id: blogId, author: user._id })
 
-    
+    const blog = await Post.findOne({ _id: blogId, author: user._id })
+
+    if (!blog) {
+        throw new ApiError("you do not have permission to delete this blog or blog not found", 403)
+    }
+
+    if (blog?.blogImagePublicId) {
+        try {
+            await deleteImageOnCloudinary(blog.blogImagePublicId)
+            console.log('Blog has been deleted')
+        } catch (error) {
+            throw new ApiError(500, "Failed to delete blog image from Cloudinary");
+        }
+    }
+
+    const deleteMyblog = await Post.findOneAndDelete({ _id: blogId, author: user._id })
 
     if (!deleteMyblog) {
         throw new ApiError("you do not have permission to delete this blog or blog not found", 403)
     }
 
     const usersBlog = await Post.find({ author: user._id }).populate({ path: "author", select: "fullName avatar username" }).sort({ createdAt: -1 })
+
     if (!usersBlog) {
         throw new ApiError("no user found", 404)
     }
