@@ -343,6 +343,38 @@ export const LikeBlog = asyncHandler(async (req, res, next) => {
 });
 
 
+// comment on blog
+export const  commentOnBlog = asyncHandler(async(req,res)=>{
+    const { blogId, comment } = req.body 
+
+    if(!blogId || !comment){
+        throw new ApiError("blog id and comment are required", 400)
+    }
+
+    const blog = await Post.findById(blogId)
+    if(!blog){
+        throw new ApiError("blog not found", 404)
+    }
+
+
+    const newCommnent = {
+        user: req.user._id,
+        commentText: comment
+    }
+
+
+    blog.comments.push(newCommnent)
+    await blog.save({validateBeforeSave: false})
+
+        const updatedBlog = await Post.findById(blogId).populate({ path: "comments.user", select: "fullName avatar username" })
+
+    res.status(200).json(
+        new ApiResponse(200, updatedBlog, "comment added successfully")
+    )
+
+})
+
+
 
 export const getAllUsers = asyncHandler(async (req, res, next) => {
     const user = req.user
