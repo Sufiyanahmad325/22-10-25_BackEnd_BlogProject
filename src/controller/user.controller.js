@@ -318,7 +318,9 @@ export const LikeBlog = asyncHandler(async (req, res, next) => {
         throw new ApiError("blog id is required", 400);
     }
 
-    const blog = await Post.findById({ _id: blogId }); //mujhe aayse dena hai _blogId but front
+    const blog = await Post.findById({ _id: blogId }) //mujhe aayse dena hai _blogId but front
+    .populate({ path: "author", select: "fullName avatar username" })
+     .populate({ path: "comments.user", select: "fullName avatar username" });
     if (!blog) {
         throw new ApiError("blog not found", 404);
     }
@@ -345,9 +347,9 @@ export const LikeBlog = asyncHandler(async (req, res, next) => {
 
 // comment on blog
 export const  commentOnBlog = asyncHandler(async(req,res)=>{
-    const { blogId, comment } = req.body 
+    const { blogId, commentText } = req.body 
 
-    if(!blogId || !comment){
+    if(!blogId || !commentText){
         throw new ApiError("blog id and comment are required", 400)
     }
 
@@ -359,7 +361,7 @@ export const  commentOnBlog = asyncHandler(async(req,res)=>{
 
     const newCommnent = {
         user: req.user._id,
-        commentText: comment
+        commentText: commentText
     }
 
 
