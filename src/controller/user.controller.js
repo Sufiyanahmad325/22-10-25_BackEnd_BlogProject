@@ -563,6 +563,27 @@ export const isUserLoggedIn = asyncHandler(async (req, res, next) => {
 
 
 
+export const readBlog = asyncHandler(async (req, res, next) => {
+    const { blogId } = req.body
+
+    if (!blogId) {
+        throw new ApiError("blog id is required", 400)
+    }
+
+    const blog = await Post.findById(blogId).populate({ path: "author", select: "fullName avatar username" })
+    .populate({path: "comments.user", select: "fullName avatar username"})
+
+    if (!blog) {
+        throw new ApiError("blog not found", 404)
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, blog, "blog fetched successfully")
+    )
+
+})
+
+
 
 
 
