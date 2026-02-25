@@ -16,7 +16,7 @@ const postSchema = new mongoose.Schema({
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true // हर post का author ज़रूरी
+    required: true
   },
 
   authorName: {
@@ -34,22 +34,45 @@ const postSchema = new mongoose.Schema({
     type: String,
   },
 
-  category:{
-    type:String,
-    required:true
+  blogImagePublicId: {
+    type: String,
   },
 
-  writerAvatar:{
-    type:String,
+  category: {
+    type: String,
+    required: true
+  },
+
+  writerAvatar: {
+    type: String,
   },
 
 
   likes: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"   // इस post को किन-किन users ने like किया
+      ref: "User"
     }
   ],
+
+  comments: [
+    {
+      user:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    commentText: {
+      type: String,
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,  
+    },
+    }
+  ],
+
 }, {
   timestamps: true // createdAt, updatedAt
 });
